@@ -6,9 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:studio": "npx drizzle-kit studio",
+    "db:push": "npx drizzle-kit push"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.9.4",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.1.1",
@@ -17,11 +20,15 @@
     "@tabler/icons-react": "^3.6.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.31.2",
     "next": "14.2.4",
     "next-auth": "^5.0.0-beta.19",
+    "next-themes": "^0.3.0",
     "react": "^18",
     "react-country-flag": "^3.1.0",
     "react-dom": "^18",
+    "sonner": "^1.5.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"
@@ -31,6 +38,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "drizzle-kit": "^0.22.8",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
