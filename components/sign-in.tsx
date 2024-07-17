@@ -19,7 +19,11 @@ export function SignIn() {
 
     try {
       signInSchema.parse(data);
-      await signIn("credentials", data);
+      await signIn("credentials", {
+        callbackUrl: "/learn",
+        email: data.email,
+        password: data.password,
+      });
     } catch (error) {
       if (error instanceof ZodError) {
         console.error("Validation errors:", error.errors);

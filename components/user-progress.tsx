@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
+import type { courses } from "@/db/schema";
 import { IconInfinity } from "@tabler/icons-react";
 import Image from "next/image";
 import Link from "next/link";
 import ReactCountryFlag from "react-country-flag";
 
 type Props = {
-  activeCourse: { title: string; language: string };
+  activeCourse: typeof courses.$inferSelect;
   hearts: number;
   points: number;
   hasActiveSubscription: boolean;

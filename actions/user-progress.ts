@@ -10,6 +10,8 @@ import { redirect } from "next/navigation";
 export const upsertUserProgress = async (courseId: number) => {
   const session = await auth();
 
+  console.log(session);
+
   if (!session?.user) {
     throw new Error("Unauthorized");
   }
@@ -20,11 +22,9 @@ export const upsertUserProgress = async (courseId: number) => {
     throw new Error("Course not found");
   }
 
-  throw new Error("Course is empty");
-
-  //   if (!course.units.length || !course.units[0].lessons.length) {
-  //     throw new Error("Course is empty");
-  //   }
+  if (!course) {
+    throw new Error("Course is empty");
+  }
 
   const existingUserProgress = await getUserProgress();
 
