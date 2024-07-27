@@ -98,6 +98,18 @@ const insertLessons = async () => {
       title: "Adjectives",
       order: 3,
     },
+    {
+      id: 4,
+      unitId: 1,
+      title: "Phrases",
+      order: 4,
+    },
+    {
+      id: 5,
+      unitId: 1,
+      title: "Sentences",
+      order: 5,
+    },
   ];
 
   await db.insert(schema.lessons).values(lessons);
