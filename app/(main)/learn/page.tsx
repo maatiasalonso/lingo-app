@@ -2,13 +2,21 @@ import { FeedWrapper } from "@/components/feed-wrapper";
 import { StickyWrapper } from "@/components/sticky-wrapper";
 import { Button } from "@/components/ui/button";
 import { UserProgress } from "@/components/user-progress";
-import { getUserProgress } from "@/db/queries";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { getUnits, getUserProgress } from "@/db/queries";
+import type { lessons, units } from "@/db/schema";
+import { IconArrowLeft, IconNotebook } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LessonButton } from "./client";
 
 export default async function LearnPage() {
-  const userProgress = await getUserProgress();
+  const unitsData = getUnits();
+  const userProgressData = getUserProgress();
+
+  const [userProgress, units] = await Promise.all([
+    userProgressData,
+    unitsData,
+  ]);
 
   if (!userProgress || !userProgress.activeCourse) {
     redirect("/courses");
@@ -26,6 +34,19 @@ export default async function LearnPage() {
       </StickyWrapper>
       <FeedWrapper>
         <Header title={userProgress.activeCourse.title} />
+        {units.map((unit) => (
+          <div key={unit.id} className="mb-10">
+            <Unit
+              id={unit.id}
+              order={unit.order}
+              description={unit.description}
+              title={unit.title}
+              lessons={unit.lessons}
+              activeLesson={undefined}
+              activeLessonPercentage={0}
+            />
+          </div>
+        ))}
       </FeedWrapper>
     </div>
   );
@@ -47,5 +68,80 @@ const Header = ({ title }: HeaderProps) => {
         <h1 className="text-lg font-bold">{title}</h1>
       </div>
     </div>
+  );
+};
+
+type UnitProps = {
+  id: number;
+  order: number;
+  description: string;
+  title: string;
+  lessons: (typeof lessons.$inferSelect & {
+    isCompleted: boolean;
+  })[];
+  activeLesson:
+    | (typeof lessons.$inferSelect & {
+        unit: typeof units.$inferSelect;
+      })
+    | undefined;
+  activeLessonPercentage: number;
+};
+
+const Unit = ({
+  id,
+  order,
+  title,
+  description,
+  lessons,
+  activeLesson,
+  activeLessonPercentage,
+}: UnitProps) => {
+  return (
+    <>
+      <UnitBanner title={title} description={description} />
+      <div className="flex items-center flex-col relative">
+        {lessons.map((lesson, index) => {
+          const isCurrent = activeLesson?.id === lesson.id;
+          const isLocked = !lesson.isCompleted && !isCurrent;
+
+          return (
+            <LessonButton
+              key={lesson.id}
+              id={lesson.id}
+              index={index}
+              totalCount={lessons.length - 1}
+              locked={isLocked}
+              current={isCurrent}
+              percentage={activeLessonPercentage}
+            />
+          );
+        })}
+      </div>
+    </>
+  );
+};
+
+type UnitBannerProps = {
+  title: string;
+  description: string;
+};
+
+const UnitBanner = ({ title, description }: UnitBannerProps) => {
+  return (
+    <section className="w-full rounded-xl bg-green-500 p-5 text-white flex items-center justify-between">
+      <div className="space-y-2.5">
+        <h3 className="text-2xl font-bold">{title}</h3>
+        <p className="text-lg">{description}</p>
+      </div>
+      <Link href={"/lesson"}>
+        <Button
+          className="uppercase font-semibold hidden xl:flex border-2 border-b-4 active:border-b-2"
+          variant={"ghost"}
+          size={"lg"}
+        >
+          <IconNotebook className="mr-2 h-5 w-5" /> Continue
+        </Button>
+      </Link>
+    </section>
   );
 };
