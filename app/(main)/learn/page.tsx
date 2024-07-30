@@ -8,7 +8,7 @@ import {
   getUnits,
   getUserProgress,
 } from "@/db/queries";
-import type { lessons, units } from "@/db/schema";
+import type { lessons, units as unitsSchema } from "@/db/schema";
 import { IconArrowLeft, IconNotebook } from "@tabler/icons-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -56,8 +56,14 @@ export default async function LearnPage() {
               description={unit.description}
               title={unit.title}
               lessons={unit.lessons}
-              activeLesson={courseProgress.activeLesson}
-              activeLessonPercentage={0}
+              activeLesson={
+                courseProgress.activeLesson as
+                  | (typeof lessons.$inferSelect & {
+                      unit: typeof unitsSchema.$inferSelect;
+                    })
+                  | undefined
+              }
+              activeLessonPercentage={lessonPercentage}
             />
           </div>
         ))}
@@ -95,7 +101,7 @@ type UnitProps = {
   })[];
   activeLesson:
     | (typeof lessons.$inferSelect & {
-        unit: typeof units.$inferSelect;
+        unit: typeof unitsSchema.$inferSelect;
       })
     | undefined;
   activeLessonPercentage: number;
