@@ -2,6 +2,7 @@
 
 import { Progress } from "@/components/ui/progress";
 import type { challenges } from "@/db/schema";
+import { cn } from "@/lib/utils";
 import { useExitModal } from "@/store/use-exit-modal";
 import { IconInfinity, IconX } from "@tabler/icons-react";
 import Image from "next/image";
@@ -35,11 +36,12 @@ export const Quiz = ({
     );
     return uncompletedIndex === -1 ? 0 : uncompletedIndex;
   });
-  const challenge = challenges[activeIndex];
+  const currentChallenge = challenges[activeIndex];
+  const options = currentChallenge?.challengeOptions ?? [];
   const title =
-    challenge.type === "ASSIST"
+    currentChallenge.type === "ASSIST"
       ? "Select the correct meaning"
-      : challenge.question;
+      : currentChallenge.question;
 
   return (
     <>
@@ -54,9 +56,17 @@ export const Quiz = ({
             <h1 className="text-lg lg:text-3xl text-center lg:text-start font-bold text-zinc-700">
               {title}
             </h1>
-            {challenge.type === "ASSIST" && (
-              <QuestionBubble question={challenge.question} />
+            {currentChallenge.type === "ASSIST" && (
+              <QuestionBubble question={currentChallenge.question} />
             )}
+            <Challenge
+              options={options}
+              onSelect={() => {}}
+              status={"none"}
+              selectedOption={undefined}
+              disabled={false}
+              type={currentChallenge.type}
+            />
           </div>
         </div>
       </section>
@@ -123,6 +133,102 @@ const QuestionBubble = ({ question }: QuestionBubbleProps) => {
         {question}
         <div className="absolute -left-3 top-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-8 transform -translate-y-1/2 rotate-90" />
       </div>
+    </div>
+  );
+};
+
+type ChallengeProps = {
+  options: (typeof challengeOptions.$inferSelect)[];
+  onSelect: (id: number) => void;
+  status: "correct" | "wrong" | "none";
+  selectedOption?: number;
+  disabled?: boolean;
+  type: (typeof challenges.$inferSelect)["type"];
+};
+
+const Challenge = ({
+  options,
+  onSelect,
+  status,
+  selectedOption,
+  disabled,
+  type,
+}: ChallengeProps) => {
+  return (
+    <div
+      className={cn(
+        "grid gap-2",
+        type === "ASSIST" && "grid-cols-1",
+        type === "SELECT" &&
+          "grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(0,1fr))]",
+      )}
+    >
+      {options.map((option, index) => (
+        <Card
+          key={option.id}
+          id={option.id}
+          text={option.text}
+          imageSrc={option.imageSrc}
+          shortcut={`${index + 1}`}
+          selected={selectedOption === option.id}
+          onClick={() => onSelect(option.id)}
+          status={status}
+          audioSrc={option.audioSrc}
+          disabled={disabled}
+          type={type}
+        />
+      ))}
+    </div>
+  );
+};
+
+type CardProps = {
+  id: number;
+  text: string;
+  imageSrc: string | null;
+  shortcut: string;
+  selected?: boolean;
+  onClick: () => void;
+  status?: "correct" | "wrong" | "none";
+  audioSrc: string | null;
+  disabled?: boolean;
+  type: (typeof challenges.$inferSelect)["type"];
+};
+
+const Card = ({
+  id,
+  text,
+  imageSrc,
+  shortcut,
+  selected = true,
+  onClick,
+  status,
+  audioSrc,
+  disabled,
+  type,
+}: CardProps) => {
+  return (
+    <div
+      onKeyDown={() => {}}
+      onClick={() => {}}
+      className={cn(
+        "h-full border-2 rounded-xl border-b-4 hover:bg-black/5 p-4 lg:p-6 cursor-pointer active:border-b-2",
+        selected && "border-sky-300 bg-sky-100 hover:bg-sky-100",
+        selected &&
+          status === "correct" &&
+          "border-green-300 bg-green-100 hover:bg-green-100",
+        selected &&
+          status === "wrong" &&
+          "border-rose-300 bg-rose-100 hover:bg-rose-100",
+        disabled && "pointer-events-none hover:bg-white",
+        type === "ASSIST" && "lg:p-3 w-full",
+      )}
+    >
+      {imageSrc && (
+        <div className="relative aspect-square mb-4 max-h-[80px] lg:max-h-[150px] w-full">
+          <Image src={imageSrc} alt={text} fill />
+        </div>
+      )}
     </div>
   );
 };
