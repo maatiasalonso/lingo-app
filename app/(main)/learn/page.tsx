@@ -156,7 +156,6 @@ const UnitBanner = ({ title, description }: UnitBannerProps) => {
       <Link href={"/lesson"}>
         <Button
           className="uppercase font-semibold hidden xl:flex border-2 border-b-4 active:border-b-2"
-          variant={"ghost"}
           size={"lg"}
         >
           <IconNotebook className="mr-2 h-5 w-5" /> Continue
