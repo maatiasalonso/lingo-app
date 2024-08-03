@@ -134,7 +134,7 @@ const insertChallengeOptions = async () => {
     {
       id: 1,
       challengeId: 1,
-      imageSrc: "/man.svg",
+      imageSrc: "/man.png",
       isCorrect: true,
       text: "El hombre",
       audioSrc: "/es_man.mp3",
@@ -142,7 +142,7 @@ const insertChallengeOptions = async () => {
     {
       id: 2,
       challengeId: 1,
-      imageSrc: "/woman.svg",
+      imageSrc: "/woman.png",
       isCorrect: false,
       text: "La mujer",
       audioSrc: "/es_woman.mp3",
@@ -150,7 +150,7 @@ const insertChallengeOptions = async () => {
     {
       id: 3,
       challengeId: 1,
-      imageSrc: "/robot.svg",
+      imageSrc: "/robot.png",
       isCorrect: false,
       text: "El robot",
       audioSrc: "/es_robot.mp3",
