@@ -34,8 +34,9 @@ const MainDescription = ({ session }: MainDescriptionProps) => {
       <div className="flex flex-col items-center gap-y-3 max-w-[330px] w-full">
         {session?.user ? (
           <Button
-            className="w-full bg-green-600 hover:bg-green-600/80 text-lg uppercase font-bold transition"
+            className="w-full uppercase font-bold"
             size={"lg"}
+            variant={"secondary"}
             asChild
           >
             <Link href={"/learn"}>Continue Learning</Link>
@@ -43,16 +44,17 @@ const MainDescription = ({ session }: MainDescriptionProps) => {
         ) : (
           <>
             <Button
-              className="w-full bg-green-600 hover:bg-green-600/80 text-lg uppercase font-bold transition flex items-center"
+              className="w-full uppercase font-bold"
               size={"lg"}
+              variant={"secondary"}
             >
               Get Started
               <IconArrowRight className="ml-2 font-bold" />
             </Button>
             <Button
-              className="w-full uppercase font-bold transition text-blue-400 hover:text-blue-500/80"
+              className="w-full uppercase font-bold"
               size={"lg"}
-              variant={"ghost"}
+              variant={"primaryOutline"}
             >
               I already have an account
             </Button>
