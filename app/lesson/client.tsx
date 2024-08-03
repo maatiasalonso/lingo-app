@@ -170,7 +170,7 @@ const Challenge = ({
           text={option.text}
           imageSrc={option.imageSrc}
           shortcut={`${index + 1}`}
-          selected={selectedOption === option.id}
+          selected={true || selectedOption === option.id}
           onClick={() => onSelect(option.id)}
           status={status}
           audioSrc={option.audioSrc}
@@ -229,6 +229,34 @@ const Card = ({
           <Image src={imageSrc} alt={text} fill />
         </div>
       )}
+      <div
+        className={cn(
+          "flex items-center justify-between",
+          type === "ASSIST" && "flex-row-reverse",
+        )}
+      >
+        {type === "ASSIST" && <div />}
+        <p
+          className={cn(
+            "text-zinc-600 text-sm lg:text-base",
+            selected && "text-sky-500",
+            status === "correct" && "text-green-500",
+            status === "wrong" && "text-rose-500",
+          )}
+        >
+          {text}
+        </p>
+        <div
+          className={cn(
+            "lg:w-[30px] lg:h-[30px] w-[20px] h-[20px] border-2 flex items-center justify-center rounded-lg text-zinc-400 lg:text-[15px] text-xs font-semibold",
+            selected && "text-sky-500 border-sky-300",
+            status === "correct" && "border-green-500 text-green-500",
+            status === "wrong" && "border-rose-500 text-rose-500",
+          )}
+        >
+          {shortcut}
+        </div>
+      </div>
     </div>
   );
 };
