@@ -1,12 +1,19 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { challenges } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import { useExitModal } from "@/store/use-exit-modal";
-import { IconInfinity, IconX } from "@tabler/icons-react";
+import {
+  IconCircleCheck,
+  IconCircleX,
+  IconInfinity,
+  IconX,
+} from "@tabler/icons-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useAudio, useKey, useMedia } from "react-use";
 import type { challengeOptions } from "../../db/schema";
 
 type Props = {
@@ -36,12 +43,22 @@ export const Quiz = ({
     );
     return uncompletedIndex === -1 ? 0 : uncompletedIndex;
   });
+  const [selectedOption, setSelectedOption] = useState<number>();
+  const [status, setStatus] = useState<"correct" | "wrong" | "none">("none");
+
   const currentChallenge = challenges[activeIndex];
   const options = currentChallenge?.challengeOptions ?? [];
+
   const title =
     currentChallenge.type === "ASSIST"
       ? "Select the correct meaning"
       : currentChallenge.question;
+
+  const handleSelect = (id: number) => {
+    if (status !== "none") return;
+
+    setSelectedOption(id);
+  };
 
   return (
     <>
@@ -61,15 +78,16 @@ export const Quiz = ({
             )}
             <Challenge
               options={options}
-              onSelect={() => {}}
-              status={"none"}
-              selectedOption={undefined}
+              onSelect={handleSelect}
+              status={status}
+              selectedOption={selectedOption}
               disabled={false}
               type={currentChallenge.type}
             />
           </div>
         </div>
       </section>
+      <Footer disabled={!selectedOption} status={status} onCheck={() => {}} />
     </>
   );
 };
@@ -207,10 +225,21 @@ const Card = ({
   disabled,
   type,
 }: CardProps) => {
+  const [audio, _, controls] = useAudio({ src: audioSrc ?? "" });
+
+  const handleClick = useCallback(() => {
+    if (disabled) return;
+
+    controls.play();
+    onClick();
+  }, [onClick, disabled, controls]);
+
+  useKey(shortcut, handleClick, {}, [handleClick]);
+
   return (
     <div
       onKeyDown={() => {}}
-      onClick={() => {}}
+      onClick={handleClick}
       className={cn(
         "h-full border-2 rounded-xl border-b-4 hover:bg-black/5 p-4 lg:p-6 cursor-pointer active:border-b-2",
         selected && "border-sky-300 bg-sky-100 hover:bg-sky-100",
@@ -224,6 +253,7 @@ const Card = ({
         type === "ASSIST" && "lg:p-3 w-full",
       )}
     >
+      {audio}
       {imageSrc && (
         <div className="relative aspect-square mb-4 max-h-[80px] lg:max-h-[150px] w-full">
           <Image src={imageSrc} alt={text} fill />
@@ -259,5 +289,75 @@ const Card = ({
         </div>
       </div>
     </div>
+  );
+};
+
+type FooterProps = {
+  lessonId?: boolean;
+  disabled?: boolean;
+  status: "correct" | "wrong" | "none" | "completed";
+  onCheck: () => void;
+};
+
+const Footer = ({ disabled, status, onCheck, lessonId }: FooterProps) => {
+  useKey("Enter", onCheck, {}, [onCheck]);
+
+  const isMobile = useMedia("(max-width: 1024px)");
+
+  const statusButtonText = useMemo(() => {
+    const statusText = {
+      none: "Check",
+      correct: "Next",
+      wrong: "Try again",
+      completed: "Continue",
+    };
+    return statusText[status];
+  }, [status]);
+
+  return (
+    <footer
+      className={cn(
+        "lg:h-[140px] h-[100px] border-t-2",
+        status === "correct" && "border-transparent bg-green-100",
+        status === "wrong" && "border-transparent bg-rose-100",
+      )}
+    >
+      <div className="max-w-[1140px] h-full mx-auto flex items-center justify-between px-6 lg:px-10">
+        {status === "correct" && (
+          <div className="text-green-500 font-bold text-base lg:text-2xl flex items-center">
+            <IconCircleCheck className="size-6 mr-4 lg:size-10" />
+            Nicely done!
+          </div>
+        )}
+        {status === "wrong" && (
+          <div className="text-rose-500 font-bold text-base lg:text-2xl flex items-center">
+            <IconCircleX className="size-6 mr-4 lg:size-10" />
+            Try again!
+          </div>
+        )}
+        {status === "completed" && (
+          <Button
+            onClick={() => {
+              window.location.href = `/lesson/${lessonId}`;
+            }}
+            className="uppercase font-bold"
+            size={isMobile ? "sm" : "lg"}
+            variant={"default"}
+          >
+            Practice again
+          </Button>
+        )}
+        <Button
+          disabled={disabled}
+          onClick={onCheck}
+          className="ml-auto uppercase font-bold"
+          size={isMobile ? "sm" : "lg"}
+          variant={status === "wrong" ? "danger" : "secondary"}
+        >
+          {statusButtonText}
+        </Button>
+      </div>
+      Footer
+    </footer>
   );
 };
