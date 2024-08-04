@@ -170,7 +170,7 @@ const Challenge = ({
           text={option.text}
           imageSrc={option.imageSrc}
           shortcut={`${index + 1}`}
-          selected={true || selectedOption === option.id}
+          selected={selectedOption === option.id}
           onClick={() => onSelect(option.id)}
           status={status}
           audioSrc={option.audioSrc}
@@ -231,11 +231,12 @@ const Card = ({
       )}
       <div
         className={cn(
-          "flex items-center justify-between",
-          type === "ASSIST" && "flex-row-reverse",
+          "flex items-center",
+          type === "ASSIST"
+            ? "flex-row-reverse justify-between"
+            : "justify-between",
         )}
       >
-        {type === "ASSIST" && <div />}
         <p
           className={cn(
             "text-zinc-600 text-sm lg:text-base",
