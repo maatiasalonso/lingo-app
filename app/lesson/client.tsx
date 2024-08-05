@@ -1,6 +1,7 @@
 "use client";
 
 import { upsertChallengeProgress } from "@/actions/challenge-progress";
+import { reduceHearts } from "@/actions/user-progress";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { challenges } from "@/db/schema";
@@ -106,6 +107,23 @@ export const Quiz = ({
           })
           .catch(() => toast.error("Something went wrong, please try again"));
       });
+    } else {
+      startTransition(() => {
+        reduceHearts(currentChallenge.id)
+          .then((response) => {
+            if (response?.error === "hearts") {
+              console.error("No hearts left");
+              return;
+            }
+
+            setStatus("wrong");
+
+            if (!response?.error) {
+              setHearts((prev) => Math.max(prev - 1, 0));
+            }
+          })
+          .catch(() => toast.error("Something went wrong, please try again"));
+      });
     }
   };
 
@@ -130,13 +148,17 @@ export const Quiz = ({
               onSelect={handleSelect}
               status={status}
               selectedOption={selectedOption}
-              disabled={false}
+              disabled={pending}
               type={currentChallenge.type}
             />
           </div>
         </div>
       </section>
-      <Footer disabled={!selectedOption} status={status} onCheck={onContinue} />
+      <Footer
+        disabled={pending || !selectedOption}
+        status={status}
+        onCheck={onContinue}
+      />
     </>
   );
 };
