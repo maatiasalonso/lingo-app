@@ -4,8 +4,8 @@ import { auth } from "@/auth";
 import db from "@/db/drizzle";
 import { getUserProgress } from "@/db/queries";
 import { challengeProgress, challenges, userProgress } from "@/db/schema";
+import { revalidatePaths } from "@/lib/utils";
 import { and, eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 
 export const upsertChallengeProgress = async (challengeId: number) => {
   const session = await auth();
@@ -37,13 +37,6 @@ export const upsertChallengeProgress = async (challengeId: number) => {
     "/leaderboard",
     `/lesson/${lessonId}`,
   ];
-
-  const revalidatePaths = (paths: string[]) => {
-    // biome-ignore lint/complexity/noForEach: <explanation>
-    paths.forEach((path) => {
-      revalidatePath(path);
-    });
-  };
 
   const updateChallengeInfo = async (isPractice: boolean) => {
     await db
