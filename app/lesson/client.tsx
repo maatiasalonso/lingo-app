@@ -1,5 +1,6 @@
 "use client";
 
+import { upsertChallengeProgress } from "@/actions/challenge-progress";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { challenges } from "@/db/schema";
@@ -12,8 +13,9 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import Image from "next/image";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { useAudio, useKey, useMedia } from "react-use";
+import { toast } from "sonner";
 import type { challengeOptions } from "../../db/schema";
 
 type Props = {
@@ -34,17 +36,19 @@ export const Quiz = ({
   initialHearts,
   userSubscription,
 }: Props) => {
+  const [pending, startTransition] = useTransition();
   const [hearts, setHearts] = useState(initialHearts);
   const [percentage, setPercentage] = useState(initialPercentage);
   const [challenges] = useState(initialLessonChallenges);
+  const [selectedOption, setSelectedOption] = useState<number>();
+  const [status, setStatus] = useState<"correct" | "wrong" | "none">("none");
+
   const [activeIndex, setActiveIndex] = useState(() => {
     const uncompletedIndex = challenges.findIndex(
       (challenge) => !challenge.isCompleted,
     );
     return uncompletedIndex === -1 ? 0 : uncompletedIndex;
   });
-  const [selectedOption, setSelectedOption] = useState<number>();
-  const [status, setStatus] = useState<"correct" | "wrong" | "none">("none");
 
   const currentChallenge = challenges[activeIndex];
   const options = currentChallenge?.challengeOptions ?? [];
@@ -54,10 +58,55 @@ export const Quiz = ({
       ? "Select the correct meaning"
       : currentChallenge.question;
 
+  const onNext = () => {
+    setActiveIndex((current) => current + 1);
+  };
+
   const handleSelect = (id: number) => {
     if (status !== "none") return;
 
     setSelectedOption(id);
+  };
+
+  const onContinue = () => {
+    if (!selectedOption) return;
+
+    if (status === "wrong") {
+      setStatus("none");
+      setSelectedOption(undefined);
+      return;
+    }
+
+    if (status === "correct") {
+      onNext();
+      setStatus("none");
+      setSelectedOption(undefined);
+      return;
+    }
+
+    const correctOption = options.find((option) => option.isCorrect);
+
+    if (!correctOption) return;
+
+    if (selectedOption === correctOption.id) {
+      startTransition(() => {
+        upsertChallengeProgress(currentChallenge.id)
+          .then((response) => {
+            if (response?.error === "hearts") {
+              console.error("No hearts left");
+              return;
+            }
+
+            setStatus("correct");
+            setPercentage((prev) => prev + 100 / challenges.length);
+
+            if (initialPercentage === 100) {
+              setHearts((prev) => Math.min(prev + 1, 5));
+            }
+          })
+          .catch(() => toast.error("Something went wrong, please try again"));
+      });
+    }
   };
 
   return (
@@ -87,7 +136,7 @@ export const Quiz = ({
           </div>
         </div>
       </section>
-      <Footer disabled={!selectedOption} status={status} onCheck={() => {}} />
+      <Footer disabled={!selectedOption} status={status} onCheck={onContinue} />
     </>
   );
 };
@@ -271,8 +320,8 @@ const Card = ({
           className={cn(
             "text-zinc-600 text-sm lg:text-base",
             selected && "text-sky-500",
-            status === "correct" && "text-green-500",
-            status === "wrong" && "text-rose-500",
+            selected && status === "correct" && "text-green-500",
+            selected && status === "wrong" && "text-rose-500",
           )}
         >
           {text}
@@ -281,8 +330,10 @@ const Card = ({
           className={cn(
             "lg:w-[30px] lg:h-[30px] w-[20px] h-[20px] border-2 flex items-center justify-center rounded-lg text-zinc-400 lg:text-[15px] text-xs font-semibold",
             selected && "text-sky-500 border-sky-300",
-            status === "correct" && "border-green-500 text-green-500",
-            status === "wrong" && "border-rose-500 text-rose-500",
+            selected &&
+              status === "correct" &&
+              "border-green-500 text-green-500",
+            selected && status === "wrong" && "border-rose-500 text-rose-500",
           )}
         >
           {shortcut}
