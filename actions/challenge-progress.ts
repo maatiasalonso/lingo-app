@@ -1,0 +1,96 @@
+"use server";
+
+import { auth } from "@/auth";
+import db from "@/db/drizzle";
+import { getUserProgress } from "@/db/queries";
+import { challengeProgress, challenges, userProgress } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+
+export const upsertChallengeProgress = async (challengeId: number) => {
+  const session = await auth();
+
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const currentUserProgress = await getUserProgress();
+
+  if (!currentUserProgress) {
+    throw new Error("User progress not found");
+  }
+
+  const challenge = await db.query.challenges.findFirst({
+    where: eq(challenges.id, challengeId),
+  });
+
+  if (!challenge) {
+    throw new Error("Challenge not found");
+  }
+
+  const lessonId = challenge.lessonId;
+
+  const pathsToRevalidate = [
+    "/learn",
+    "/lesson",
+    "/quests",
+    "/leaderboard",
+    `/lesson/${lessonId}`,
+  ];
+
+  const revalidatePaths = (paths: string[]) => {
+    // biome-ignore lint/complexity/noForEach: <explanation>
+    paths.forEach((path) => {
+      revalidatePath(path);
+    });
+  };
+
+  const updateChallengeInfo = async (isPractice: boolean) => {
+    await db
+      .update(userProgress)
+      .set({
+        ...(isPractice && {
+          hearts: Math.min(currentUserProgress.hearts + 1, 5),
+        }),
+        points: currentUserProgress.points + 10,
+      })
+      .where(eq(userProgress.userId, session?.user?.id || ""));
+  };
+
+  const existingChallengeProgress = await db.query.challengeProgress.findFirst({
+    where: and(
+      eq(challengeProgress.userId, session?.user?.id || ""),
+      eq(challengeProgress.challengeId, challengeId),
+    ),
+  });
+
+  const isPractice = !!existingChallengeProgress;
+
+  if (currentUserProgress.hearts === 0 && !isPractice) {
+    return { error: "No hearts left" };
+  }
+
+  if (isPractice) {
+    await db
+      .update(challengeProgress)
+      .set({
+        isCompleted: true,
+      })
+      .where(eq(challengeProgress.id, existingChallengeProgress.id));
+
+    await updateChallengeInfo(isPractice);
+
+    revalidatePaths(pathsToRevalidate);
+    return;
+  }
+
+  await db.insert(challengeProgress).values({
+    challengeId,
+    userId: session?.user?.id || "",
+    isCompleted: true,
+  });
+
+  await updateChallengeInfo(isPractice);
+
+  revalidatePaths(pathsToRevalidate);
+};
