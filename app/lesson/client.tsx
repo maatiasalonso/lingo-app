@@ -2,6 +2,7 @@
 
 import { upsertChallengeProgress } from "@/actions/challenge-progress";
 import { reduceHearts } from "@/actions/user-progress";
+import { confettiSideCannons } from "@/components/magicui/confetti-side-cannons";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { challenges } from "@/db/schema";
@@ -14,6 +15,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { useAudio, useKey, useMedia } from "react-use";
 import { toast } from "sonner";
@@ -37,13 +39,19 @@ export const Quiz = ({
   initialHearts,
   userSubscription,
 }: Props) => {
+  const router = useRouter();
+  const [finishAudio] = useAudio({ src: "/finish.mp3", autoPlay: true });
+  const [correctAudio, _c, correctControls] = useAudio({ src: "/correct.mp3" });
+  const [incorrectAudio, _i, incorrectControls] = useAudio({
+    src: "/incorrect.mp3",
+  });
+  const [lessonId] = useState(initialLessonId);
   const [pending, startTransition] = useTransition();
   const [hearts, setHearts] = useState(initialHearts);
   const [percentage, setPercentage] = useState(initialPercentage);
   const [challenges] = useState(initialLessonChallenges);
   const [selectedOption, setSelectedOption] = useState<number>();
   const [status, setStatus] = useState<"correct" | "wrong" | "none">("none");
-
   const [activeIndex, setActiveIndex] = useState(() => {
     const uncompletedIndex = challenges.findIndex(
       (challenge) => !challenge.isCompleted,
@@ -53,11 +61,6 @@ export const Quiz = ({
 
   const currentChallenge = challenges[activeIndex];
   const options = currentChallenge?.challengeOptions ?? [];
-
-  const title =
-    currentChallenge.type === "ASSIST"
-      ? "Select the correct meaning"
-      : currentChallenge.question;
 
   const onNext = () => {
     setActiveIndex((current) => current + 1);
@@ -98,6 +101,7 @@ export const Quiz = ({
               return;
             }
 
+            correctControls.play();
             setStatus("correct");
             setPercentage((prev) => prev + 100 / challenges.length);
 
@@ -116,6 +120,7 @@ export const Quiz = ({
               return;
             }
 
+            incorrectControls.play();
             setStatus("wrong");
 
             if (!response?.error) {
@@ -127,8 +132,56 @@ export const Quiz = ({
     }
   };
 
+  if (!currentChallenge) {
+    return (
+      <>
+        {finishAudio}
+        {confettiSideCannons()}
+        <section className="flex flex-col gap-y-4 lg:gap-y-8 max-w-lg mx-auto text-center items-center justify-center h-full">
+          <Image
+            src={"/finish.svg"}
+            alt="Finished"
+            width={100}
+            height={100}
+            className="hidden lg:block"
+          />
+          <Image
+            src={"/finish.svg"}
+            alt="Finished"
+            width={50}
+            height={50}
+            className="block lg:hidden"
+          />
+          <h1 className="text-2xl lg:text-3xl font-bold text-zinc-700">
+            Great job! <br />
+            <span className="text-zinc-500">You finished the lesson</span>
+          </h1>
+          <div className="flex items-center gap-x-4 w-full">
+            <ResultCard variant="points" value={challenges.length * 10} />
+            <ResultCard variant="hearts" value={hearts} />
+          </div>
+        </section>
+        <Footer
+          lessonId={lessonId}
+          disabled={pending || !selectedOption}
+          status="completed"
+          onCheck={() => {
+            router.push("/learn");
+          }}
+        />
+      </>
+    );
+  }
+
+  const title =
+    currentChallenge.type === "ASSIST"
+      ? "Select the correct meaning"
+      : currentChallenge.question;
+
   return (
     <>
+      {correctAudio}
+      {incorrectAudio}
       <Header
         hearts={hearts}
         percentage={percentage}
@@ -366,7 +419,7 @@ const Card = ({
 };
 
 type FooterProps = {
-  lessonId?: boolean;
+  lessonId?: number;
   disabled?: boolean;
   status: "correct" | "wrong" | "none" | "completed";
   onCheck: () => void;
@@ -432,5 +485,49 @@ const Footer = ({ disabled, status, onCheck, lessonId }: FooterProps) => {
       </div>
       Footer
     </footer>
+  );
+};
+
+type ResultCardProps = {
+  variant: "points" | "hearts";
+  value: number;
+};
+
+const ResultCard = ({ variant, value }: ResultCardProps) => {
+  const imageSrc = variant === "points" ? "/points.svg" : "/heart.svg";
+  return (
+    <section
+      className={cn(
+        "rounded-2xl border-2 w-full",
+        variant === "points" && "bg-orange-400 border-orange-400",
+        variant === "hearts" && "bg-rose-500 border-rose-500",
+      )}
+    >
+      <div
+        className={cn(
+          "text-white rounded-t-xl font-bold text-center uppercase text-sm",
+          variant === "hearts" && "bg-rose-500",
+          variant === "points" && "bg-orange-400",
+        )}
+      >
+        {variant === "hearts" ? "Hearts Left" : "Total XP"}
+      </div>
+      <div
+        className={cn(
+          "rounded-2xl bg-white items-center flex justify-center p-6 font-bold text-lg",
+          variant === "hearts" && "text-rose-500",
+          variant === "points" && "text-orange-500",
+        )}
+      >
+        <Image
+          src={imageSrc}
+          alt={variant}
+          width={30}
+          height={30}
+          className="mr-1.5"
+        />
+        {value}
+      </div>
+    </section>
   );
 };
